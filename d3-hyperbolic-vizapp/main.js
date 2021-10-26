@@ -6,6 +6,8 @@ hyperbolicSys.parameters({
 
 hyperbolicSys.renderCanvas("#render");
 
+console.log()
+
 let data = {
     nodes: [
         {
@@ -29,6 +31,8 @@ let data = {
       }
     ]
 }
+
+data = erdos_renyi(50,0.2)
 
 hyperbolicSys.setGraph(data);
 // Or the library allows us to read a graphviz Dot file
