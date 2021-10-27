@@ -1,0 +1,13 @@
+.view{
+  height: 800px;
+  width: 800px;
+}
+
+.node{
+  stroke: black;
+  stroke-width: 1px;
+}
+
+.link{
+  stroke: black;
+}

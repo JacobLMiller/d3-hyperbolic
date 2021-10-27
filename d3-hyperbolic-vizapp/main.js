@@ -32,7 +32,16 @@ let data = {
     ]
 }
 
-data = erdos_renyi(50,0.2)
+data = {
+  nodes: [
+    {id:1},{id:2},{id:3},{id:4},{id:5}
+  ],
+  edges: [
+    {source:1,target:2},{source:1,target:3},{source:2,target:3},{source:2,target:4},{source:4,target:5},{source:3,target:5}
+  ]
+}
+
+//data = erdos_renyi(50,0.2)
 
 hyperbolicSys.setGraph(data);
 // Or the library allows us to read a graphviz Dot file
