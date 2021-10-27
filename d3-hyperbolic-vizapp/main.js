@@ -1,7 +1,7 @@
 let hyperbolicSys = new d3Hyperbolic();
 
 hyperbolicSys.parameters({
-    projection: "euclidean"
+    projection: "hyperbolic"
 });
 
 hyperbolicSys.renderCanvas("#render");
