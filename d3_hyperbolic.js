@@ -131,7 +131,8 @@ class d3Hyperbolic {
     }
 
    function translate_and_zoom(event){
-     svg.attr('transform',event.transform)
+     node.attr('transform',event.transform);
+     link.attr('transform',event.transform);
    }
   }
 }
