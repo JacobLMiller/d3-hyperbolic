@@ -1,3 +1,9 @@
+let poindisk = {
+  'cx': null,
+  'cy': null,
+  'r': null
+}
+
 function assert(condition, message) {
     if (!condition) {
         throw message || "Assertion failed";
@@ -35,6 +41,11 @@ class d3Hyperbolic {
     // TODO: add assertion
     let element = document.querySelector(elementQuery);
     this.selectedElement = element;
+
+    poindisk.cx = this.selectedElement.clientHeight/2;
+    poindisk.cy = this.selectedElement.clientHeight/2;
+    poindisk.r = this.selectedElement.clientHeight/2;
+    poindisk.center = {'x': poindisk.cx, 'y': poindisk.cy}
   }
 
   static readDot(dotfile) {
@@ -53,6 +64,7 @@ class d3Hyperbolic {
     this.graph = graph;
   }
 
+
   render() {
     // set the dimensions and margins of the graph
     let svgHeight = this.selectedElement.clientHeight;
@@ -63,6 +75,7 @@ class d3Hyperbolic {
 
     let projection = this.projection;
     let vertices = this.graph.nodes;
+    let edges = this.graph.edges;
 
     // append the svg object to the body of the page
     var svg = d3.select(this.selectedElement)
@@ -102,11 +115,12 @@ class d3Hyperbolic {
 
     // Initialize the links
     var link = svg
-      .selectAll("line")
+      .selectAll("path")
       .data(this.graph.edges)
       .enter()
-      .append("line")
-      .attr("class", "link");
+      .append("path")
+      .attr("class", "link")
+      .attr('fill', 'none')
       //.style("stroke", "#aaa");
 
     // Initialize the nodes
@@ -125,7 +139,7 @@ class d3Hyperbolic {
         .id(function (d) { return d.id; })                     // This provide  the id of a node
         .links(this.graph.edges)                                    // and this the list of links
       )
-      .force("charge", d3.forceManyBody().strength(-1200))         // This adds repulsion between nodes. Play with the -400 for the repulsion strength
+      .force("charge", d3.forceManyBody().strength(-100000))         // This adds repulsion between nodes. Play with the -400 for the repulsion strength
       .force("center", d3.forceCenter(width / 2, height / 2))     // This force attracts nodes to the center of the svg area
       .on("end", ticked);
 
@@ -156,16 +170,18 @@ class d3Hyperbolic {
         for (let i = 0; i < vertices.length; i ++){
           to_poincare(vertices[i],centerX,centerY)
         }
+        for (let i = 0; i < edges.length; i ++){
+          edges[i].arc = poincare_geodesic(edges[i].source.center,edges[i].target.center,poindisk)
+          console.log(arc_path(edges[i].arc))
+        }
 
         link
-          .attr("x1", function (d) { return d.source.poinx; })
-          .attr("y1", function (d) { return d.source.poiny; })
-          .attr("x2", function (d) { return d.target.poinx; })
-          .attr("y2", function (d) { return d.target.poiny; });
+          .attr('d', d => arc_path(d.arc));
 
         node
-          .attr("cx", function (d) { return d.poinx; })
-          .attr("cy", function (d) { return d.poiny; });
+          .attr("cx", d => d.circle.cx)
+          .attr("cy", d => d.circle.cy)
+          .attr('r', d => d.circle.r);
       }
     }
 
@@ -182,8 +198,11 @@ class d3Hyperbolic {
     let hR = Math.acosh((0.5*circleR*circleR)+1);
     let poincareR = Math.tanh(hR/2);
 
-    ePosition.poinx = width/2+(width/2)*(poincareR*Math.sin(theta));
-    ePosition.poiny = width/2+(width/2)*(poincareR*Math.cos(theta));
+    let poinx = width/2+(width/2)*(poincareR*Math.sin(theta));
+    let poiny = width/2+(width/2)*(poincareR*Math.cos(theta));
+
+    ePosition.center = {'x': poinx, 'y': poiny}
+    ePosition.circle = poincare_circle(canvas_to_disk(ePosition.center,poindisk),0.05)
 
   }
 
