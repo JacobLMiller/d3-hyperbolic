@@ -6,7 +6,7 @@ function canvas_to_disk(p,poindisk){
   if (x*x+y*y < 1.0){
     return {'x': x, 'y': y}
   }else{
-    console.log("Something went wrong, probalbly rounding error")
+    console.log("Something went wrong, probably rounding error")
     return null;
   }
 }
@@ -62,15 +62,18 @@ function euclid_line(p,q){
 }
 
 function get_perpendicular_line(pq,v){
+  //Returns a line perpendicular to pq that contains v
   return {'a': pq.b, 'b': -pq.a, 'c': -v.x * pq.b + v.y*pq.a};
 }
 
 function find_midpoint(p,q){
+  //Returns the midpoint between p and q
   return {'x': (p.x + q.x) / 2, 'y': (p.y + q.y) / 2};
 }
 
 function find_intersection(pq,xy){
   //Todo: Handle parallel lines
+  //Returns the point of intersection between lines pq and xy
   return {
     'x': (pq.c * xy.b - pq.b * xy.c) / (pq.b * xy.a - pq.a * xy.b),
     'y': (pq.a * xy.c - pq.c * xy.a) / (pq.b * xy.a - pq.a * xy.b)
@@ -79,12 +82,13 @@ function find_intersection(pq,xy){
 
 //Circle inversion
 function circle_inversion(p,circle){
+  //Inverts p about circle, returning the new point p' See link for details:
+  //https://en.wikipedia.org/wiki/Inversive_geometry#Inversion_in_a_circle
   let dist = euclid_dist(p,circle.center);
   let new_c = circle.r*circle.r/(dist*dist);
   let u = {'x': (p.x - circle.center.x), 'y': (p.y - circle.center.y)};
   return {'x': new_c * u.x + circle.center.x, 'y': new_c * u.y + circle.center.y};
 }
-
 
 //Hyperbolic geodesic between two points in Poincare disk
 function poincare_geodesic(p,q,poindisk){
@@ -94,7 +98,6 @@ function poincare_geodesic(p,q,poindisk){
   //Construct perpendicular lines at midpoint
   //Get intersection of perpendicular lines, C
   //C, along with p and q, fully characterize the arc.
-
 
   let pp = circle_inversion(p,poindisk);
   let qq = circle_inversion(q,poindisk);

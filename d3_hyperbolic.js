@@ -167,12 +167,13 @@ class d3Hyperbolic {
         centerX = centerX/vertices.length;
         centerY = centerY/vertices.length;
 
+        //Set vertices position in the poincare disk.
         for (let i = 0; i < vertices.length; i ++){
           to_poincare(vertices[i],centerX,centerY)
         }
+        //Calculate geodesic arc between vertices in edge set
         for (let i = 0; i < edges.length; i ++){
           edges[i].arc = poincare_geodesic(edges[i].source.center,edges[i].target.center,poindisk)
-          console.log(arc_path(edges[i].arc))
         }
 
         link
@@ -186,22 +187,32 @@ class d3Hyperbolic {
     }
 
   function to_poincare(ePosition,centerX,centerY){
+    //ePosition: position of node on canvas
+    //centerX,centerY: geometric mean of data
+    //Returns a circle object with it's appropriate cx,cy, and r for the poincare projection
+
+    //0.005 is a hyperparameter, but seems to work well.
     let x = 0.005*(ePosition.x-centerX);
     let y = 0.005*(ePosition.y-centerY);
 
+    //Find position in terms of poincare disk.
     let circleX = ((x-margin.left)/((svgWidth-margin.right)-margin.left)-0.5)*2;
     let circleY = ((y-margin.top)/((svgWidth-margin.bottom)-margin.top)-0.5)*-2;
 
     let circleR = Math.hypot(x,y);
     let theta = Math.atan2(x,y);
 
+    //hR performs inverse lamber projection
     let hR = Math.acosh((0.5*circleR*circleR)+1);
+    //Poincare projection
     let poincareR = Math.tanh(hR/2);
 
-    let poinx = width/2+(width/2)*(poincareR*Math.sin(theta));
-    let poiny = width/2+(width/2)*(poincareR*Math.cos(theta));
+    //Polar to cartesian coordinates
+    let poinx = poindisk.r+poindisk.r*(poincareR*Math.sin(theta));
+    let poiny = poindisk.r+poindisk.r*(poincareR*Math.cos(theta));
 
     ePosition.center = {'x': poinx, 'y': poiny}
+    //Find circle with hyperbolic radius 0.05 at center
     ePosition.circle = poincare_circle(canvas_to_disk(ePosition.center,poindisk),0.05)
 
   }
