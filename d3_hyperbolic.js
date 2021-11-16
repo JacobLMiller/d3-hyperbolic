@@ -42,10 +42,12 @@ class d3Hyperbolic {
     let element = document.querySelector(elementQuery);
     this.selectedElement = element;
 
-    poindisk.cx = this.selectedElement.clientHeight/2;
-    poindisk.cy = this.selectedElement.clientHeight/2;
-    poindisk.r = this.selectedElement.clientHeight/2;
+    poindisk.boundbox = this.selectedElement.getBoundingClientRect();
+    console.log(poindisk.boundbox)
+    poindisk.cx = (poindisk.boundbox.right -poindisk.boundbox.left)/2 ;
+    poindisk.cy = (poindisk.boundbox.bottom - poindisk.boundbox.top)/2;
     poindisk.center = {'x': poindisk.cx, 'y': poindisk.cy}
+    poindisk.r = this.selectedElement.clientHeight/2;
   }
 
   static readDot(dotfile) {
@@ -139,8 +141,8 @@ class d3Hyperbolic {
         .id(function (d) { return d.id; })                     // This provide  the id of a node
         .links(this.graph.edges)                                    // and this the list of links
       )
-      .force("charge", d3.forceManyBody().strength(-100000))         // This adds repulsion between nodes. Play with the -400 for the repulsion strength
-      .force("center", d3.forceCenter(width / 2, height / 2))     // This force attracts nodes to the center of the svg area
+      .force("charge", d3.forceManyBody().strength(-400))         // This adds repulsion between nodes. Play with the -400 for the repulsion strength
+      .force("center", d3.forceCenter(poindisk.cx, poindisk.cy))     // This force attracts nodes to the center of the svg area
       .on("end", ticked);
 
 
@@ -169,6 +171,7 @@ class d3Hyperbolic {
 
         //Set vertices position in the poincare disk.
         for (let i = 0; i < vertices.length; i ++){
+          console.log(vertices[i])
           to_poincare(vertices[i],centerX,centerY)
         }
         //Calculate geodesic arc between vertices in edge set
@@ -199,6 +202,7 @@ class d3Hyperbolic {
     let circleX = ((x-margin.left)/((svgWidth-margin.right)-margin.left)-0.5)*2;
     let circleY = ((y-margin.top)/((svgWidth-margin.bottom)-margin.top)-0.5)*-2;
 
+
     let circleR = Math.hypot(x,y);
     let theta = Math.atan2(x,y);
 
@@ -212,6 +216,7 @@ class d3Hyperbolic {
     let poiny = poindisk.r+poindisk.r*(poincareR*Math.cos(theta));
 
     ePosition.center = {'x': poinx, 'y': poiny}
+    console.log(ePosition.center)
     //Find circle with hyperbolic radius 0.05 at center
     ePosition.circle = poincare_circle(canvas_to_disk(ePosition.center,poindisk),0.05)
 

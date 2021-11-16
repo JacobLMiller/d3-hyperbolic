@@ -1,7 +1,10 @@
 //Coordinate systems
 function canvas_to_disk(p,poindisk){
-  let x = (p.x - poindisk.cx)/poindisk.r;
-  let y = -(p.y - poindisk.cy)/poindisk.r;
+  let rect = poindisk.boundbox;
+  let x = ((p.x - rect.left)/(rect.right-rect.left)-0.5)*2;
+  let y = ((p.y - rect.top)/(rect.bottom-rect.top)-0.5)*-2;
+
+//((e.clientX - rect.left)/(rect.right-rect.left)-0.5)*2
 
   if (x*x+y*y < 1.0){
     return {'x': x, 'y': y}
@@ -98,6 +101,11 @@ function poincare_geodesic(p,q,poindisk){
   //Construct perpendicular lines at midpoint
   //Get intersection of perpendicular lines, C
   //C, along with p and q, fully characterize the arc.
+  let left = poindisk.boundbox.left
+  let top = poindisk.boundbox.top
+  p = {'x': p.x-left, 'y': p.y-top}
+  q = {'x': q.x-left, 'y': q.y-top}
+
 
   let pp = circle_inversion(p,poindisk);
   let qq = circle_inversion(q,poindisk);
@@ -141,6 +149,7 @@ function arc_path(arc){
 function poincare_circle(center,r){
   //Return a circle in the poincare disk with center center and hyperbolic radius r
   //Math is done in terms of the Poincare disk
+
   let e_center_radius = Math.sqrt(center.x*center.x + center.y*center.y);
   let cr = hyper_radius_from_euclidean(e_center_radius); //Hyperbolic distance from origin
 
@@ -156,5 +165,6 @@ function poincare_circle(center,r){
   let y = ecr * Math.sin(c_theta);
   let canvas_coord = disk_to_canvas({'x':x, 'y':y},poindisk)
   //Attributes that begin with p are in terms of the poincare disk.
-  return {'cx':canvas_coord.x, 'cy': canvas_coord.y, 'r': er*(poindisk.r),'px': x, 'py': y,  'center': {'x': x, 'y':y}}
+  return {'cx':canvas_coord.x, 'cy': canvas_coord.y, 'r': er*(poindisk.r),'px': x, 'py': y,  'center': {'x': x, 'y':y},
+          'hcenter': disk_to_canvas(center,poindisk)}
 }
