@@ -1,5 +1,5 @@
 //Coordinate systems
-function canvas_to_disk(p,poindisk){
+function canvas_to_disk(p){
   let rect = poindisk.boundbox;
   let x = ((p.x - rect.left)/(rect.right-rect.left)-0.5)*2;
   let y = ((p.y - rect.top)/(rect.bottom-rect.top)-0.5)*-2;
@@ -14,7 +14,39 @@ function canvas_to_disk(p,poindisk){
   }
 }
 
-function disk_to_canvas(p,poindisk){
+function to_poincare(ePosition, centerX, centerY, inPlace = true) {
+  //ePosition: position of node on canvas
+  //centerX,centerY: geometric mean of data
+  //Returns a circle object with it's appropriate cx,cy, and r for the poincare projection
+
+  //0.005 is a hyperparameter, but seems to work well.
+  let x = 0.005 * (ePosition.x - centerX);
+  let y = 0.005 * (ePosition.y - centerY);
+
+  let circleR = Math.hypot(x, y);
+  let theta = Math.atan2(x, y);
+
+  //hR performs inverse lamber projection
+  let hR = Math.acosh((0.5 * circleR * circleR) + 1);
+  //Poincare projection
+  let poincareR = Math.tanh(hR / 2);
+
+  //Polar to cartesian coordinates
+  let poinx = poindisk.r + poindisk.r * (poincareR * Math.sin(theta));
+  let poiny = poindisk.r + poindisk.r * (poincareR * Math.cos(theta));
+
+  if (inPlace) {
+    ePosition.center = { 'x': poinx, 'y': poiny }
+    ePosition.circle = poincare_circle(canvas_to_disk(ePosition.center, poindisk), 0.05, poindisk)
+  }
+  return {
+    center: { 'x': poinx, 'y': poiny },
+    //Find circle with hyperbolic radius 0.05 at center
+    circle: poincare_circle(canvas_to_disk({x: poinx, y: poiny}, poindisk), 0.05)
+  }
+}
+
+function disk_to_canvas(p){
   let x = p.x*poindisk.r + poindisk.cx;
   let y = -p.y*poindisk.r + poindisk.cy;
   return {'x': x, 'y': y};
@@ -87,14 +119,14 @@ function find_intersection(pq,xy){
 function circle_inversion(p,circle){
   //Inverts p about circle, returning the new point p' See link for details:
   //https://en.wikipedia.org/wiki/Inversive_geometry#Inversion_in_a_circle
-  let dist = euclid_dist(p,circle.center);
+  let dist = euclid_dist(p, circle.center);
   let new_c = circle.r*circle.r/(dist*dist);
   let u = {'x': (p.x - circle.center.x), 'y': (p.y - circle.center.y)};
   return {'x': new_c * u.x + circle.center.x, 'y': new_c * u.y + circle.center.y};
 }
 
 //Hyperbolic geodesic between two points in Poincare disk
-function poincare_geodesic(p,q,poindisk){
+function poincare_geodesic(p,q){
   //Steps of the algorithm are as follows:
   //Find inverted points outside the unit disk
   //Grab midpoints between them.
