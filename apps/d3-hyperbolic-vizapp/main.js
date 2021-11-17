@@ -1,14 +1,11 @@
 let d3Hyperbolic = require("../../src/d3_hyperbolic").default;
-
-let hyperbolicSys = new d3Hyperbolic();
-
-hyperbolicSys.parameters({
-    // projection: "hyperbolic",
-    projection: "euclidean",
-    edgeThickness: 2
-});
-
-hyperbolicSys.renderCanvas("#render");
+let hyperbolicSys = new d3Hyperbolic()
+  .parameters({
+      // projection: "hyperbolic",
+      projection: "euclidean",
+      edgeThickness: 2
+  })
+  .renderCanvas("#render");
 
 // let data = {
 //     nodes: [
@@ -46,7 +43,17 @@ let data = {
 
 hyperbolicSys.setGraph(data);
 // Or the library allows us to read a graphviz Dot file
-// hyperbolicSys.setGraph(d3Hyperbolic.readDot("dot/file/address.dot"));
+let dotStr = `digraph D {
+  A [shape=diamond]
+  B [shape=box]
+  C [shape=circle]
+
+  A -> B [style=dashed, color=grey]
+  A -> C [color="black:invis:black"]
+  B -> C [penwidth=5, arrowhead=none]
+
+}`
+hyperbolicSys.setGraphFromDot(dotStr);
 
 hyperbolicSys.render();
 

@@ -1,4 +1,10 @@
 //Coordinate systems
+/**
+ * The coordinate system transformation from canvas to poincare disk.
+ * @param {NodeObject} p - The node of a graph with defined `x` and `y` in poincare disk. 
+ * @param {PoinDisk} poindisk - The poindisk object to use.
+ * @returns {{x: number, y: number}} - The new position in the canvas of poindisk.
+ */
 function canvas_to_disk(p, poindisk){
   let rect = poindisk.boundbox;
   let x = ((p.x - rect.left)/(rect.right-rect.left)-0.5)*2;

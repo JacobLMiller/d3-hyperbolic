@@ -1,19 +1,25 @@
 import * as d3 from "d3";
-import * as utils from "./utils.js"
-import {to_poincare, poincare_geodesic, arc_path} from "./hyperbolic_functions"
+import * as utils from "./utils.js";
+import { strict as assert } from "assert";
+import {to_poincare, poincare_geodesic, arc_path} from "./hyperbolic_functions";
 
-let poindisk = {
-  boundbox: null,
-  cx: null,
-  cy: null,
-  r: null,
-  center: {
-    x: null,
-    y: null
-  }
-}
+/**
+ * The main d3-hyperbolic library class for rendering.
+ * @example 
+let d3Hyperbolic = require("../../src/d3_hyperbolic").default;
+let hyperbolicSys = new d3Hyperbolic()
+  .parameters({...})
+  .renderCanvas("#the-svg-element-id")
+  .setGraph(graphData)
+  .render();
+ */
+class d3Hyperbolic {
 
-export default class d3Hyperbolic {
+  /**
+   * The main constructor of the class. Creates an instance of d3Hyperbolic and returns it.
+   * @example let hyperbolicSys = new d3Hyperbolic();
+   * @returns The created instance.
+   */
   constructor() {
     // Initialize default parameters
     this.projection = "hyperbolic";
@@ -21,11 +27,16 @@ export default class d3Hyperbolic {
     this.graph = {};
   }
 
+  /**
+   * Set the parameters for for rendering and calculations. You can call this anytime throughout the code to change any parameter. 
+   * @param {paramDict} paramDict - The configuration object you want to set.
+   * @returns {d3Hyperbolic} `this` instance.
+   */
   parameters(paramDict) {
     for (const [key, value] of Object.entries(paramDict)) {
       if (key === "projection") {
-        utils.assert(
-          value.toLowerCase() === "hyperbolic" || value.toLowerCase() === "euclidean",
+        assert.equal(
+          value.toLowerCase() === "hyperbolic" || value.toLowerCase() === "euclidean", true,
           'Must be "hyperbolic" or "euclidean"'
         );
         this.projection = value;
@@ -34,15 +45,22 @@ export default class d3Hyperbolic {
         this.edgeThickness = value;
       }
       else {
-        utils.assert(false, `The parameter ${key} is undefined`);
+        assert.equal(false, true, `The parameter ${key} is undefined`);
       }
     }
+    return this;
   }
 
+  /**
+   * Sets the element as the default rendering canvas. 
+   * @param {string} elementQuery - The element to select. An id of an SVG element is required.
+   * @param {margin} margin - The margin to use withing that svg element.
+   * @returns `this` instance of d3Hyperbolic.
+   */
   renderCanvas(elementQuery, margin=null) {
     // elementQuery must select a single empty div
     let element = document.querySelector(elementQuery);
-    utils.assert(element.childNodes.length == 0, "Given rendering element must be empty");
+    assert.equal(element.childNodes.length, 0, "Given rendering element must be empty");
     this.selectedElement = element;
 
     // set the dimensions and margins of the graph
@@ -56,26 +74,34 @@ export default class d3Hyperbolic {
     }
     this.canvasWidth = this.svgWidth - this.margin.left - this.margin.right,
     this.canvasHeight = this.svgHeight - this.margin.top - this.margin.bottom;
-
+    return this;
   }
 
-  static readDot(dotfile) {
-    // Read the file as string first, then
-
-    // I could not make DotParser work. Need help
-    let graph = DotParser.parse(`digraph D {
-        A -> {B, C, D} -> {F}
-      }
-    `);
-    console.log(graph);
-    return graph;
-  }
-
+  /**
+   * Sets the graph for rendering. 
+   * @param {Graph} graph The graph object with nodes and edges list.
+   * @returns `this` instance of d3Hyperbolic
+   */
   setGraph(graph) {
     this.graph = graph;
+    return this;
+  }
+
+  /**
+   * Reads the graph from graphviz dot format string and sets it as default graph as {@link setGraph}. 
+   * @param {string} dotStr The dot format string to read from.
+   * @returns `this` instance of d3Hyperbolic
+   */
+  setGraphFromDot(dotStr) {
+    this.graph = utils.readDot(dotStr);
+    return this;
   }
 
 
+  /**
+   * Render the default graph to the default svg element.
+   * @returns `this` instance of hyperbolic.
+   */
   render() {
     let projection = this.projection;
     let vertices = this.graph.nodes;
@@ -122,7 +148,6 @@ export default class d3Hyperbolic {
     if (projection === 'euclidean') {
       // Zoom functionality
       zoom.on("zoom", event => {
-        console.log(event.transform);
         node.attr('transform', event.transform);
         link.attr('transform', event.transform);
       });
@@ -149,7 +174,6 @@ export default class d3Hyperbolic {
         .force("charge", d3.forceManyBody().strength(-400))         // This adds repulsion between nodes. Play with the -400 for the repulsion strength
         .force("center", d3.forceCenter(this.canvasWidth / 2, this.canvasHeight / 2))     // This force attracts nodes to the center of the svg area
         .on("end", ticked => {
-          console.log(edges);
           link
             .attr('d', d => d3.line()([[d.source.x, d.source.y], [d.target.x, d.target.y]]));
     
@@ -159,7 +183,16 @@ export default class d3Hyperbolic {
         });
     }
     else if (projection === 'hyperbolic') {
-      // Our poindisk
+      let poindisk = {
+        boundbox: null,
+        cx: null,
+        cy: null,
+        r: null,
+        center: {
+          x: null,
+          y: null
+        }
+      }
       poindisk.boundbox = this.selectedElement.getBoundingClientRect();
       poindisk.cx = (poindisk.boundbox.right - poindisk.boundbox.left) / 2;
       poindisk.cy = (poindisk.boundbox.bottom - poindisk.boundbox.top) / 2;
@@ -212,22 +245,10 @@ export default class d3Hyperbolic {
             .attr("cy", d => d.circle.cy)
             .attr('r', d => d.circle.r);
 
-          console.log(vertices);
-          console.log(edges);
-
           // Zoom functionality
           // This helped me a lot: https://www.freecodecamp.org/news/get-ready-to-zoom-and-pan-like-a-pro-after-reading-this-in-depth-tutorial-5d963b0a153e/
           zoom
             .on("zoom", event => {
-              // console.log({
-              //   cH: this.canvasHeight,
-              //   cW: this.canvasWidth,
-              //   margin: this.margin
-
-              // });
-              // console.log(event.transform);
-            
-
               // Update positions of vertices
               // And Set vertices position in the poincare disk.
               for (let i = 0; i < vertices.length; i++) {
@@ -268,5 +289,8 @@ export default class d3Hyperbolic {
 
 
     }
+    return this;
   }
 }
+
+export default d3Hyperbolic;

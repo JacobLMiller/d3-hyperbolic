@@ -4,11 +4,9 @@
   "description": "Graph Visualization library for visualizing graph in a hyperbolic space",
   "scripts": {
     "doc": "jsdoc -c jsdoc.json",
-
     "app-hyperbolic": "npx parcel apps/d3-hyperbolic-vizapp/index.html",
     "app-point-and-click": "npx parcel apps/point-and-click-app/index.html",
     "app-build-all": "npx parcel build apps/d3-hyperbolic-vizapp/index.html apps/point-and-click-app/index.html",
-
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -29,6 +27,8 @@
     "jsdoc": "^3.6.7"
   },
   "dependencies": {
-    "d3": "^7.1.1"
+    "assert": "^2.0.0",
+    "d3": "^7.1.1",
+    "dotparser": "^1.1.0"
   }
 }
