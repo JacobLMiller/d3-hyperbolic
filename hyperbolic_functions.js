@@ -4,14 +4,14 @@ function canvas_to_disk(p){
   let x = ((p.x - rect.left)/(rect.right-rect.left)-0.5)*2;
   let y = ((p.y - rect.top)/(rect.bottom-rect.top)-0.5)*-2;
 
-//((e.clientX - rect.left)/(rect.right-rect.left)-0.5)*2
-
-  if (x*x+y*y < 1.0){
-    return {'x': x, 'y': y}
-  }else{
-    console.log("Something went wrong, probably rounding error")
-    return null;
-  }
+  return {'x': x, 'y': y};
+  // if (x*x+y*y < 1.0){
+  //   return {'x': x, 'y': y}
+  // }else{
+  //   // console.log("Something went wrong, probably rounding error")
+  //   // Still gracefully returning the value
+  //   return {'x': x, 'y': y}
+  // }
 }
 
 function to_poincare(ePosition, centerX, centerY, inPlace = true) {

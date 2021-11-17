@@ -41,11 +41,24 @@ class d3Hyperbolic {
     }
   }
 
-  renderCanvas(elementQuery) {
+  renderCanvas(elementQuery, margin=null) {
     // elementQuery must select a single empty div
     let element = document.querySelector(elementQuery);
     assert(element.childNodes.length == 0, "Given rendering element must be empty");
     this.selectedElement = element;
+
+    // set the dimensions and margins of the graph
+    this.svgHeight = this.selectedElement.clientHeight;
+    this.svgWidth = this.selectedElement.clientWidth;
+    if (margin == null) {
+      this.margin = { top: 10, right: 30, bottom: 30, left: 40 };
+    }
+    else {
+      this.margin = margin;
+    }
+    this.canvasWidth = this.svgWidth - this.margin.left - this.margin.right,
+    this.canvasHeight = this.svgHeight - this.margin.top - this.margin.bottom;
+
   }
 
   static readDot(dotfile) {
@@ -66,13 +79,6 @@ class d3Hyperbolic {
 
 
   render() {
-    // set the dimensions and margins of the graph
-    let svgHeight = this.selectedElement.clientHeight;
-    let svgWidth = this.selectedElement.clientWidth;
-    var margin = { top: 10, right: 30, bottom: 30, left: 40 },
-      width = svgWidth - margin.left - margin.right,
-      height = svgHeight - margin.top - margin.bottom;
-
     let projection = this.projection;
     let vertices = this.graph.nodes;
     let edges = this.graph.edges;
@@ -80,11 +86,11 @@ class d3Hyperbolic {
     // append the svg object to the body of the page
     var svg = d3.select(this.selectedElement)
       .append("svg")
-      .attr("width", width + margin.left + margin.right)
-      .attr("height", height + margin.top + margin.bottom)
+      .attr("width", this.canvasWidth + this.margin.left + this.margin.right)
+      .attr("height", this.canvasHeight + this.margin.top + this.margin.bottom)
       .append("g")
       .attr("transform",
-        "translate(" + margin.left + "," + margin.top + ")");
+        "translate(" + this.margin.left + "," + this.margin.top + ")");
 
     let bottomLayer = svg.append('g')
       .attr("class", "bottomlayer");
@@ -111,37 +117,45 @@ class d3Hyperbolic {
       .attr("class", "node")
       .style("fill", "#69b3a2");
 
+    let zoom = d3.zoom()
+      .scaleExtent([.5, 3]);
 
 
     if (projection === 'euclidean') {
       // Zoom functionality
-      let zoom = d3.zoom()
-        .scaleExtent([.5, 3])
-        //.translateExtent([[-50,-50],[svgWidth+50,svgHeight+50]])
-        .extent([[margin.right, margin.right], [svgWidth - margin.right, margin.top - svgHeight]])
-        .on("zoom", event => {
-          node.attr('transform', event.transform);
-          link.attr('transform', event.transform);
-        });
+      zoom.on("zoom", event => {
+        console.log(event.transform);
+        node.attr('transform', event.transform);
+        link.attr('transform', event.transform);
+      });
 
-      let view = svg.append('rect')
-        .attr('x', margin.left)
-        .attr('y', margin.top)
-        .attr('width', width - margin.right - margin.left)
-        .attr('height', height - margin.bottom - margin.top)
+      bottomLayer.append('rect')
+        .attr('x', this.margin.left)
+        .attr('y', this.margin.top)
+        .attr('width', this.canvasWidth - this.margin.right - this.margin.left)
+        .attr('height', this.canvasHeight - this.margin.bottom - this.margin.top)
         .style('fill', 'lightgrey')
-        .style('stroke', 'black')
-        .call(zoom);
+        .style('stroke', 'black');
+      
+      svg.call(zoom);
 
       // Let's list the force we wanna apply on the network
-      var simulation = d3.forceSimulation(this.graph.nodes)                 // Force algorithm is applied to data.nodes
+      d3.forceSimulation(vertices)                 // Force algorithm is applied to data.nodes
         .force("link", d3.forceLink()                               // This force provides links between nodes
           .id(function (d) { return d.id; })                     // This provide  the id of a node
           .links(edges, d => String(d.source)+d.target)                                    // and this the list of links
         )
         .force("charge", d3.forceManyBody().strength(-400))         // This adds repulsion between nodes. Play with the -400 for the repulsion strength
-        .force("center", d3.forceCenter(poindisk.cx, poindisk.cy))     // This force attracts nodes to the center of the svg area
-        .on("end", ticked);
+        .force("center", d3.forceCenter(this.canvasWidth / 2, this.canvasHeight / 2))     // This force attracts nodes to the center of the svg area
+        .on("end", ticked => {
+          console.log(edges);
+          link
+            .attr('d', d => d3.line()([[d.source.x, d.source.y], [d.target.x, d.target.y]]));
+    
+          node
+            .attr("cx", d => d.x)
+            .attr("cy", d => d.y);
+        });
     }
     else if (projection === 'hyperbolic') {
       // Our poindisk
@@ -151,10 +165,16 @@ class d3Hyperbolic {
       poindisk.r = Math.min(poindisk.cx, poindisk.cy);
       poindisk.center = { x: poindisk.cx, y: poindisk.cy }
 
+      // bottomLayer.append('circle')
+      //   .attr('cx', poindisk.cx)
+      //   .attr('cy', poindisk.cy)
+      //   .attr('r', poindisk.r)
+      //   .style('fill', 'lightgrey')
+      //   .style('stroke', 'black')
       bottomLayer.append('circle')
-        .attr('cx', poindisk.cx)
-        .attr('cy', poindisk.cy)
-        .attr('r', poindisk.r)
+        .attr('cx', (poindisk.boundbox.right - poindisk.boundbox.left)/2)
+        .attr('cy', (poindisk.boundbox.bottom - poindisk.boundbox.top)/2)
+        .attr('r', (poindisk.boundbox.right - poindisk.boundbox.left)/2)
         .style('fill', 'lightgrey')
         .style('stroke', 'black')
 
@@ -167,37 +187,87 @@ class d3Hyperbolic {
         )
         .force("charge", d3.forceManyBody().strength(-400))         // This adds repulsion between nodes. Play with the -400 for the repulsion strength
         .force("center", d3.forceCenter(poindisk.cx, poindisk.cy))     // This force attracts nodes to the center of the svg area
-        .on("end", ticked);
+        // This function is run at each iteration of the force algorithm, updating the nodes position.
+        .on("end", ticked => {
+          let centerX = 0;
+          let centerY = 0;
+          for (let i = 0; i < vertices.length; i++) {
+            centerX += vertices[i].x;
+            centerY += vertices[i].y;
+          }
+          centerX = centerX / vertices.length;
+          centerY = centerY / vertices.length;
+
+          //Set vertices position in the poincare disk.
+          for (let i = 0; i < vertices.length; i++) {
+            to_poincare(vertices[i], centerX, centerY, poindisk, true)
+          }
+          //Calculate geodesic arc between vertices in edge set
+          for (let i = 0; i < edges.length; i++) {
+            edges[i].arc = poincare_geodesic(edges[i].source.center, edges[i].target.center, poindisk)
+          }
+
+          link
+            .attr('d', d => arc_path(d.arc));
+
+          node
+            .attr("cx", d => d.circle.cx)
+            .attr("cy", d => d.circle.cy)
+            .attr('r', d => d.circle.r);
+
+          console.log(vertices);
+          console.log(edges);
+
+          // Zoom functionality
+          // This helped me a lot: https://www.freecodecamp.org/news/get-ready-to-zoom-and-pan-like-a-pro-after-reading-this-in-depth-tutorial-5d963b0a153e/
+          zoom
+            .on("zoom", event => {
+              // console.log({
+              //   cH: this.canvasHeight,
+              //   cW: this.canvasWidth,
+              //   margin: this.margin
+
+              // });
+              // console.log(event.transform);
+            
+
+              // Update positions of vertices
+              // And Set vertices position in the poincare disk.
+              for (let i = 0; i < vertices.length; i++) {
+                // I know there is more efficient way to do this. Will solve this later
+                // Backup the original x and y
+                vertices[i].tmp = {
+                  x: vertices[i].x,
+                  y: vertices[i].y
+                }
+                vertices[i].x = vertices[i].tmp.x + event.transform.x;
+                vertices[i].y = vertices[i].tmp.y + event.transform.y;
+                to_poincare(vertices[i], centerX, centerY, poindisk, true)
+
+                // Restore original position
+                vertices[i].x = vertices[i].tmp.x;
+                vertices[i].y = vertices[i].tmp.y;
+              }
+              //Calculate geodesic arc between vertices in edge set
+              for (let i = 0; i < edges.length; i++) {
+                edges[i].arc = poincare_geodesic(edges[i].source.center, edges[i].target.center, poindisk)
+              }
+
+              node
+                .attr("cx", d => d.circle.cx)
+                .attr("cy", d => d.circle.cy)
+                .attr('r', d => d.circle.r);
+
+              link
+                .attr('d', d => arc_path(d.arc));
+              
+            });
 
 
-      // This function is run at each iteration of the force algorithm, updating the nodes position.
-      function ticked() {
-        let centerX = 0;
-        let centerY = 0;
-        for (let i = 0; i < vertices.length; i++) {
-          centerX += vertices[i].x;
-          centerY += vertices[i].y;
-        }
-        centerX = centerX / vertices.length;
-        centerY = centerY / vertices.length;
+          svg.call(zoom);
 
-        //Set vertices position in the poincare disk.
-        for (let i = 0; i < vertices.length; i++) {
-          to_poincare(vertices[i], centerX, centerY, poindisk, true)
-        }
-        //Calculate geodesic arc between vertices in edge set
-        for (let i = 0; i < edges.length; i++) {
-          edges[i].arc = poincare_geodesic(edges[i].source.center, edges[i].target.center, poindisk)
-        }
+        });
 
-        link
-          .attr('d', d => arc_path(d.arc));
-
-        node
-          .attr("cx", d => d.circle.cx)
-          .attr("cy", d => d.circle.cy)
-          .attr('r', d => d.circle.r);
-      }
 
     }
   }

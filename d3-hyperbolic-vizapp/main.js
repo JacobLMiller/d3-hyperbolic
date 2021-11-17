@@ -2,6 +2,7 @@ let hyperbolicSys = new d3Hyperbolic();
 
 hyperbolicSys.parameters({
     projection: "hyperbolic",
+    // projection: "euclidean",
     edgeThickness: 2
 });
 
