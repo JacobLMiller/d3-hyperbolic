@@ -1,8 +1,10 @@
+let d3Hyperbolic = require("../../src/d3_hyperbolic").default;
+
 let hyperbolicSys = new d3Hyperbolic();
 
 hyperbolicSys.parameters({
-    projection: "hyperbolic",
-    // projection: "euclidean",
+    // projection: "hyperbolic",
+    projection: "euclidean",
     edgeThickness: 2
 });
 

@@ -1,0 +1,34 @@
+{
+  "name": "d3-hyperbolic",
+  "version": "0.1.0",
+  "description": "Graph Visualization library for visualizing graph in a hyperbolic space",
+  "scripts": {
+    "doc": "jsdoc -c jsdoc.json",
+
+    "app-hyperbolic": "npx parcel apps/d3-hyperbolic-vizapp/index.html",
+    "app-point-and-click": "npx parcel apps/point-and-click-app/index.html",
+    "app-build-all": "npx parcel build apps/d3-hyperbolic-vizapp/index.html apps/point-and-click-app/index.html",
+
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mickey253/d3-hyperbolic.git"
+  },
+  "keywords": [
+    "d3",
+    "hyperbolic-space"
+  ],
+  "author": "Rahat Zaman",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/Mickey253/d3-hyperbolic/issues"
+  },
+  "homepage": "https://github.com/Mickey253/d3-hyperbolic#readme",
+  "devDependencies": {
+    "jsdoc": "^3.6.7"
+  },
+  "dependencies": {
+    "d3": "^7.1.1"
+  }
+}

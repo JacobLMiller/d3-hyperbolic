@@ -1,4 +1,8 @@
-var poindisk = {
+import * as d3 from "d3";
+import * as utils from "./utils.js"
+import {to_poincare, poincare_geodesic, arc_path} from "./hyperbolic_functions"
+
+let poindisk = {
   boundbox: null,
   cx: null,
   cy: null,
@@ -9,13 +13,7 @@ var poindisk = {
   }
 }
 
-function assert(condition, message) {
-  if (!condition) {
-    throw message || "Assertion failed";
-  }
-}
-
-class d3Hyperbolic {
+export default class d3Hyperbolic {
   constructor() {
     // Initialize default parameters
     this.projection = "hyperbolic";
@@ -26,7 +24,7 @@ class d3Hyperbolic {
   parameters(paramDict) {
     for (const [key, value] of Object.entries(paramDict)) {
       if (key === "projection") {
-        assert(
+        utils.assert(
           value.toLowerCase() === "hyperbolic" || value.toLowerCase() === "euclidean",
           'Must be "hyperbolic" or "euclidean"'
         );
@@ -36,7 +34,7 @@ class d3Hyperbolic {
         this.edgeThickness = value;
       }
       else {
-        assert(false, `The parameter ${key} is undefined`);
+        utils.assert(false, `The parameter ${key} is undefined`);
       }
     }
   }
@@ -44,7 +42,7 @@ class d3Hyperbolic {
   renderCanvas(elementQuery, margin=null) {
     // elementQuery must select a single empty div
     let element = document.querySelector(elementQuery);
-    assert(element.childNodes.length == 0, "Given rendering element must be empty");
+    utils.assert(element.childNodes.length == 0, "Given rendering element must be empty");
     this.selectedElement = element;
 
     // set the dimensions and margins of the graph
@@ -137,12 +135,15 @@ class d3Hyperbolic {
         .style('fill', 'lightgrey')
         .style('stroke', 'black');
       
+      // @ts-ignore
       svg.call(zoom);
 
       // Let's list the force we wanna apply on the network
       d3.forceSimulation(vertices)                 // Force algorithm is applied to data.nodes
         .force("link", d3.forceLink()                               // This force provides links between nodes
-          .id(function (d) { return d.id; })                     // This provide  the id of a node
+          // @ts-ignore
+          .id(d => d.id)                     // This provide  the id of a node
+          // @ts-ignore
           .links(edges, d => String(d.source)+d.target)                                    // and this the list of links
         )
         .force("charge", d3.forceManyBody().strength(-400))         // This adds repulsion between nodes. Play with the -400 for the repulsion strength
@@ -165,12 +166,6 @@ class d3Hyperbolic {
       poindisk.r = Math.min(poindisk.cx, poindisk.cy);
       poindisk.center = { x: poindisk.cx, y: poindisk.cy }
 
-      // bottomLayer.append('circle')
-      //   .attr('cx', poindisk.cx)
-      //   .attr('cy', poindisk.cy)
-      //   .attr('r', poindisk.r)
-      //   .style('fill', 'lightgrey')
-      //   .style('stroke', 'black')
       bottomLayer.append('circle')
         .attr('cx', (poindisk.boundbox.right - poindisk.boundbox.left)/2)
         .attr('cy', (poindisk.boundbox.bottom - poindisk.boundbox.top)/2)
@@ -182,7 +177,9 @@ class d3Hyperbolic {
       // Let's list the force we wanna apply on the network
       d3.forceSimulation(vertices)                 // Force algorithm is applied to data.nodes
         .force("link", d3.forceLink()                               // This force provides links between nodes
-          .id(function (d) { return d.id; })                     // This provide  the id of a node
+          // @ts-ignore
+          .id(d => d.id)                     // This provide  the id of a node
+          // @ts-ignore
           .links(edges, d => String(d.source)+d.target)                                    // and this the list of links
         )
         .force("charge", d3.forceManyBody().strength(-400))         // This adds repulsion between nodes. Play with the -400 for the repulsion strength
@@ -208,7 +205,7 @@ class d3Hyperbolic {
           }
 
           link
-            .attr('d', d => arc_path(d.arc));
+            .attr('d', d => arc_path(d.arc, poindisk));
 
           node
             .attr("cx", d => d.circle.cx)
@@ -259,11 +256,12 @@ class d3Hyperbolic {
                 .attr('r', d => d.circle.r);
 
               link
-                .attr('d', d => arc_path(d.arc));
+                .attr('d', d => arc_path(d.arc, poindisk));
               
             });
 
 
+          // @ts-ignore
           svg.call(zoom);
 
         });
