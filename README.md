@@ -65,8 +65,6 @@ npm run app-hyperbolic
 
 ## Usage
 
-The usage can be easily understood by going through the [tutorial](). 
-
 Instantiate instance of class by using `new d3-Hyperbolic()`.
 
 Parameters such as projection can be set using
@@ -165,7 +163,7 @@ For creating more advanced graph visualization in hyperbolic space or fine tunin
 
 ## API
 
-For API reference, please refer to the [documentation page]().
+For API reference, please refer to the [documentation page](https://d3hyperbolic.netlify.app/).
 
 ## Contributing
 
