@@ -1,6 +1,10 @@
 /**
  * @file This file has a list of random graph generators.
  */
+/**
+ * This module is a collection of random graph generative algorithms.
+ * @module graph_generators
+ */
 
 import {strict as assert} from 'assert';
 

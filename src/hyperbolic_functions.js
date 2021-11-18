@@ -1,6 +1,10 @@
 /**
  * @file This file has a list of utility function for calculating poincare disk projections.
  */
+/**
+ * This module is a collection of functions for calculating poincare disk projections.
+ * @module hyperbolic_functions
+ */
 import * as d3 from "d3";
 /**
  * The coordinate system transformation from canvas to poincare disk.
@@ -31,7 +35,7 @@ exports.canvas_to_disk = canvas_to_disk;
 *@param {float} centerY - y coordinate of geometric mean of data
 *@param {PoinDisk} poindisk - The poindisk object to use
 *@param {boolean} inPlace - Whether the data is already in place or not.
-*@returns {circle: {cx: number, cy: number, r: number}}
+*@returns {{circle: {cx: number, cy: number, r: number}}}
 */
 exports.to_poincare = function to_poincare(ePosition, centerX, centerY, poindisk, inPlace = true) {
   //ePosition: position of node on canvas
@@ -70,7 +74,7 @@ exports.to_poincare = function to_poincare(ePosition, centerX, centerY, poindisk
  * The coordinate system transformation from canvas to poincare disk.
  * @param {NodeObject} p - A point with defined `x` and `y` in terms of the poincare disk.
  * @param {PoinDisk} poindisk - The poindisk object to use.
- * @returns {'x': number, 'y': number} - New position in canvas of p
+ * @returns {{'x': number, 'y': number}} - New position in canvas of p
  */
 function disk_to_canvas(p, poindisk){
   let x = p.x*poindisk.r + poindisk.cx;
@@ -84,7 +88,7 @@ function disk_to_canvas(p, poindisk){
  * @param {number} r - Radial component of polar coordinate
  * @param {number} theta - Angular component of polar coordinate
  * @param {NodeObject} center - center from which r and theta are calculated
- * @returns {'x': number, 'y': number}  - cartesian coordiates of point
+ * @returns {{'x': number, 'y': number}}  - cartesian coordiates of point
  */
 function polar_to_cart(r,theta,center={'x':0,'y':0}){
   return{
@@ -96,7 +100,7 @@ function polar_to_cart(r,theta,center={'x':0,'y':0}){
 /**
  * Convert cartesian coordinates to polar coordinates.
  * @param {NodeObject} p - A point with defined 'x' and 'y'
- * @returns {'r': number, 'theta': number}  - polar coordinates of point
+ * @returns {{'r': number, 'theta': number}}  - polar coordinates of point
  */
 function cart_to_polar(p){
   let r = Math.sqrt(p.x*p.x+p.y*p.y);
@@ -150,7 +154,7 @@ function hyper_radius_from_euclidean(r){
  * Characterizes the Euclidean line between p and q.
  * @param {NodeObject} p - A point with defined 'x' and 'y'
  * @param {NodeObject} q - A point with defined 'x' and 'y'
- * @returns {'a': number, 'b': number, 'c': number}  - Parameters of line in the standard form: ax + by -c = 0
+ * @returns {{'a': number, 'b': number, 'c': number}}  - Parameters of line in the standard form: ax + by -c = 0
  */
 function euclid_line(p,q){
   //TODO: make this more robust to error
@@ -168,7 +172,7 @@ function euclid_line(p,q){
  * Returns a line perpendicular to pq that contains v
  * @param {LineObject} pq - A line with defined 'a' and 'b' and 'c'
  * @param {NodeObject} v - A point with defined 'x' and 'y'
- * @returns {'a': number, 'b': number, 'c': number}  - Parameters of line in the standard form: ax + by -c = 0
+ * @returns {{'a': number, 'b': number, 'c': number}}  - Parameters of line in the standard form: ax + by -c = 0
  */
 function get_perpendicular_line(pq,v){
   //Returns a line perpendicular to pq that contains v
@@ -179,7 +183,7 @@ function get_perpendicular_line(pq,v){
  * Returns Euclidean midpoint between p and q
  * @param {NodeObject} p - A point with defined 'x' and 'y'
  * @param {NodeObject} q - A point with defined 'x' and 'y'
- * @returns {'x': number, 'y': number}  - midpoint between p and q
+ * @returns {{'x': number, 'y': number}}  - midpoint between p and q
  */
 function find_midpoint(p,q){
   //Returns the midpoint between p and q
@@ -190,7 +194,7 @@ function find_midpoint(p,q){
  * Finds the point of intersection of lines pq and xy
  * @param {LineObject} pq - A line with defined 'a','b','c'
  * @param {LineObject} xy - A line with defined 'a','b','c''
- * @returns {'x': number, 'y': number}  - Intersection point
+ * @returns {{'x': number, 'y': number}}  - Intersection point
  */
 function find_intersection(pq,xy){
   //TODO: Handle parallel lines
@@ -206,7 +210,7 @@ function find_intersection(pq,xy){
  * See https://en.wikipedia.org/wiki/Inversive_geometry#Inversion_in_a_circle for details
  * @param {NodeObject} p - A point with defined 'x' and 'y'
  * @param {CircleObject} circle - A circle with defined 'cx', 'cy', and 'r'
- * @returns {'x': number, 'y': number}  - Inverted point
+ * @returns {{'x': number, 'y': number}}  - Inverted point
  */
 function circle_inversion(p,circle){
   let cx = circle.cx
@@ -224,7 +228,7 @@ function circle_inversion(p,circle){
  * @param {NodeObject} p - startpoint
  * @param {NodeObject} q - endpoint
  * @param {PoinDisk} poindisk - Poindisk object
- * @returns {'p1': NodeObject, 'p2': NodeObject, 'C': NodeObject, 'r': number, 'startAngle': number, 'endAngle': number}  - Characterization of arc in the poincare disk.
+ * @returns {{'p1': NodeObject, 'p2': NodeObject, 'C': NodeObject, 'r': number, 'startAngle': number, 'endAngle': number}}  - Characterization of arc in the poincare disk.
  */
 exports.poincare_geodesic = function poincare_geodesic(p,q, poindisk){
   //Steps of the algorithm are as follows:
@@ -293,7 +297,7 @@ exports.arc_path = function arc_path(arc, poindisk){
  * @param {NodeObject} center - Center in the poincare disk of cricle
  * @param {number} r - hyperbolic radius of circle
  * @param {NodeObject} q - PoinDisk
- * @returns {'cx': number, 'cy': number, 'r': number}  - Circle with the projected cx, cy, and r
+ * @returns {{'cx': number, 'cy': number, 'r': number}}  - Circle with the projected cx, cy, and r
  */
 
 //TODO: Allow for a circle given two/three points
