@@ -1,4 +1,7 @@
 /**
+ * @file This file contains all the javascript Object type definitions used throughout the library.
+ */
+/**
  * @typedef {Object} NodeObject - A single node object. It can have many properties, but it must have a property named `id`.
  * @property {Object} id - The unique id for the node. Must be unique throughout all graphs used in {d3Hyperbolic} instance.
  */
@@ -26,16 +29,6 @@
  * @property {number} right - The right margin.
  */
 
-let poindisk = {
-boundbox: null,
-cx: null,
-cy: null,
-r: null,
-center: {
-    x: null,
-    y: null
-}
-}
 /**
  * @typedef {Object} PoinDisk - The Poincare disk specification for visualization.
  * @property {{left: number, right: number, top: number, bottom: number}} boundbox - The bounding box of the disk. Of format {left, right, top, bottom} all being integer.

@@ -1,3 +1,8 @@
+/**
+ * @file This is the main file where hyperbolic and euclidean visualization is done with the class d3Hyperbolic. 
+ */
+
+
 import * as d3 from "d3";
 import * as utils from "./utils.js";
 import { strict as assert } from "assert";

@@ -1,3 +1,7 @@
+/**
+ * @file This file has a list of random graph generators.
+ */
+
 import {strict as assert} from 'assert';
 
 /**

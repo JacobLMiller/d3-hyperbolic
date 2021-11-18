@@ -1,4 +1,10 @@
 /**
+ * @file This file contains a list of utility functions for helping in graph visualization.
+ */
+
+var parse = require('dotparser');
+
+/**
  * This module is a collection of utility functions for convenience.
  * @module utils
  */
@@ -8,7 +14,7 @@
  * @returns {Graph} - A graph object.
  */
 exports.readDot = dotfile => {
-  let absGraph = parse();
+  let absGraph = parse(dotfile);
   let items = absGraph[0].children;
   console.log(items);
   let graph = { nodes: [], edges: [] };
