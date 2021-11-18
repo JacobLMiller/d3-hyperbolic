@@ -32,15 +32,14 @@ let poindisk = {
 poindisk.cx = (poindisk.boundbox.right - poindisk.boundbox.left) / 2;
 poindisk.cy = (poindisk.boundbox.bottom - poindisk.boundbox.top) / 2;
 poindisk.center = { 'x': poindisk.cx, 'y': poindisk.cy }
-console.log((poindisk.boundbox.bottom - poindisk.boundbox.top) / 2 + poindisk.boundbox.left)
-console.log(poindisk.cx)
+
 
 console.log(poindisk.boundbox)
 
 let view = svg.append('circle')
-  .attr('cx', width / 2)
-  .attr('cy', width / 2)
-  .attr('r', width / 2)
+  .attr('cx', poindisk.cx)
+  .attr('cy', poindisk.cy)
+  .attr('r', poindisk.r)
   .style('fill', 'lightgrey')
   .style('stroke', 'black')
   .on('click', onclick)
@@ -79,11 +78,22 @@ let drawLine = function (line) {
     .data(line)
     .join(
       enter => enter.append('path')
-        .attr('d', d => arc_path(d, poindisk))
+        .attr('d', d => arc_path(d))
         .attr('class', 'testline')
         .style('stroke', 'black')
         .style('fill', 'none')
     )
+
+    //Draws the inversion center (outside the disk)
+    /*svg.selectAll('.tests')
+      .data(lines, d => d.p2)
+      .join(
+        enter => enter.append('circle')
+          .attr('class', 'tests')
+          .attr('cx', d => d.c.x)
+          .attr('cy', d => d.c.y)
+          .attr('r', 10)
+      )*/
 }
 
 let drawLines = function (lines) {
@@ -95,34 +105,39 @@ let drawLines = function (lines) {
         .attr('class', 'lines')
         .style('stroke', 'black')
         .style('fill', 'none')
+        //.attr('transform', d => "translate(" + d.c.x.toString() + ',' + d.c.y.toString() + ")")
     )
+
 }
 
 function onmove(e) {
   if (can_draw_line && vertices.length >= 1) {
     let left = poindisk.boundbox.left
     let top = poindisk.boundbox.top
-    lines.push(poincare_geodesic(vertices[0], { 'x': e.x - left, 'y': e.y - top }, poindisk));
+    lines.push(poincare_geodesic(vertices[0], { 'x': e.x , 'y': e.y}, poindisk));
     drawLine(lines)
     lines.pop()
   }
 
 }
 
-function onclick(e) {
+
+
+function onclick() {
   // @ts-ignore
+  let e = event
+  let left = poindisk.boundbox.left
+  let top = poindisk.boundbox.top
   if (document.getElementById('draw-select').value === 'circle') {
     nodes.push(poincare_circle(canvas_to_disk({ 'x': e.x, 'y': e.y }, poindisk), get_radius(), poindisk))
     // @ts-ignore
   } else if (document.getElementById('draw-select').value === 'line' && can_draw_line === false) {
-    let left = poindisk.boundbox.left
-    let top = poindisk.boundbox.top
-    vertices.push({ 'x': e.x - left, 'y': e.y - top }, poindisk)
+
+    vertices.push({ 'x': e.x, 'y': e.y  }, poindisk)
     can_draw_line = true;
   } else if (can_draw_line === true) {
-    let left = poindisk.boundbox.left
-    let top = poindisk.boundbox.top
-    lines.push(poincare_geodesic(vertices[0], { 'x': e.x - left, 'y': e.y - top }, poindisk))
+
+    lines.push(poincare_geodesic(vertices[0], { 'x': e.x , 'y': e.y  }, poindisk))
     vertices = []
     can_draw_line = false
     drawLines(lines)
