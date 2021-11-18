@@ -1,8 +1,8 @@
 {
     "source": {
-        "include": ["src"],
+        "include": ["./src"],
         "includePattern": ".js$",
-        "excludePattern": "(node_modules/|docs)"
+        "excludePattern": "(node_modules/|docs|src/legacy)"
     },
     "plugins": ["plugins/markdown"],
     "templates": {
@@ -12,6 +12,7 @@
     "opts": {
         "recurse": true,
         "destination": "./docs/",
-        "template": "./doc-template/"
+        "template": "./doc-template/",
+        "readme": "./README.md"
     }
 }

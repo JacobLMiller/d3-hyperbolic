@@ -1,4 +1,7 @@
-//Coordinate systems
+/**
+ * @file This file has a list of utility function for calculating poincare disk projections.
+ */
+
 /**
  * The coordinate system transformation from canvas to poincare disk.
  * @param {NodeObject} p - The node of a graph with defined `x` and `y` in the canvas.
@@ -62,12 +65,17 @@ exports.to_poincare = function to_poincare(ePosition, centerX, centerY, poindisk
   }
 }
 
+<<<<<<< HEAD
 
 /**
  * The coordinate system transformation from canvas to poincare disk.
  * @param {NodeObject} p - A point with defined `x` and `y` in terms of the poincare disk.
  * @param {PoinDisk} poindisk - The poindisk object to use.
  * @returns {'x': number, 'y': number} - New position in canvas of p
+=======
+/**
+ * 
+>>>>>>> 7961cdff8f11f68383076ab7a269d1db62393e4e
  */
 function disk_to_canvas(p, poindisk){
   let x = p.x*poindisk.r + poindisk.cx;

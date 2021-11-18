@@ -1,8 +1,9 @@
 let d3Hyperbolic = require("../../src/d3_hyperbolic").default;
+
 let hyperbolicSys = new d3Hyperbolic()
   .parameters({
-      // projection: "hyperbolic",
-      projection: "euclidean",
+      projection: "hyperbolic",
+      // projection: "euclidean",
       edgeThickness: 2
   })
   .renderCanvas("#render");
@@ -42,18 +43,20 @@ let data = {
 //data = erdos_renyi(50,0.2)
 
 hyperbolicSys.setGraph(data);
-// Or the library allows us to read a graphviz Dot file
-let dotStr = `digraph D {
-  A [shape=diamond]
-  B [shape=box]
-  C [shape=circle]
 
-  A -> B [style=dashed, color=grey]
-  A -> C [color="black:invis:black"]
-  B -> C [penwidth=5, arrowhead=none]
+// hyperbolicSys.setGraph(data);
+// // Or the library allows us to read a graphviz Dot file
+// let dotStr = `digraph D {
+//   A [shape=diamond]
+//   B [shape=box]
+//   C [shape=circle]
 
-}`
-hyperbolicSys.setGraphFromDot(dotStr);
+//   A -> B [style=dashed, color=grey]
+//   A -> C [color="black:invis:black"]
+//   B -> C [penwidth=5, arrowhead=none]
+
+// }`
+// hyperbolicSys.setGraphFromDot(dotStr);
 
 hyperbolicSys.render();
 
