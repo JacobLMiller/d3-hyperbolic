@@ -1,4 +1,5 @@
 let d3Hyperbolic = require("../../src/d3_hyperbolic").default;
+let erdos_renyi = require("../../src/graph_generators").erdos_renyi;
 
 let hyperbolicSys = new d3Hyperbolic()
   .parameters({
@@ -40,9 +41,25 @@ let data = {
     {source:1,target:2},{source:1,target:3},{source:2,target:3},{source:2,target:4},{source:4,target:5},{source:3,target:5}
   ]
 }
-//data = erdos_renyi(50,0.2)
 
-hyperbolicSys.setGraph(data);
+document.getElementById("generate-btn").addEventListener("click", () => {
+  let nInput = document.getElementById('erdos-n').value
+  let pInput = document.getElementById('erdos-p').value
+  let projection = document.getElementById('projections').value
+
+
+  console.log(nInput);
+
+  data = erdos_renyi(nInput,pInput)
+  console.log(data);
+
+  hyperbolicSys
+    .reset()
+    .parameters({'projection': projection})
+    .setGraph(data)
+    .render();
+});
+
 
 // hyperbolicSys.setGraph(data);
 // // Or the library allows us to read a graphviz Dot file
@@ -58,7 +75,6 @@ hyperbolicSys.setGraph(data);
 // }`
 // hyperbolicSys.setGraphFromDot(dotStr);
 
-hyperbolicSys.render();
 
 // hyperbolicSys.parameters({
 //     optional_params: 2,

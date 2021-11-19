@@ -9,9 +9,28 @@
 
 </head>
 <body>
-    <h1>Graph in Euclidean</h1>
-
-    <div class="view" id="render"></div>
+    <center><h1>D3-Hyperbolic demonstration</h1></center>
+	<div class="container">
+		<div class="ui">
+			<div class="sidebar">
+                <p>Erdos Renyi</p>
+				<label class="label" for="erdos-n">n:</label>
+				<input type="number" id="erdos-n" value="5"/>
+				<label class="label" for="erdos-p">p:</label>
+				<input type="number" id="erdos-p" value="0.2"/>
+                <select id="projections">
+                    <option value="euclidean" selected>Euclidean</option>
+                    <option value="hyperbolic">Hyperbolic</option>
+                </select>
+                <button id="generate-btn">Generate</button>
+			</div>
+			<div class="mainview">
+                <div class="view">
+                    <svg id="render"></svg>
+                </div>
+			</div>
+		</div>
+	</div>
 
     <script type="module" src='main.js'></script>
 

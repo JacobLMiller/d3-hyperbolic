@@ -5,7 +5,6 @@
  * This module is a collection of functions for calculating poincare disk projections.
  * @module hyperbolic_functions
  */
-import * as d3 from "d3";
 /**
  * The coordinate system transformation from canvas to poincare disk.
  * @param {NodeObject} p - The node of a graph with defined `x` and `y` in the canvas.
