@@ -39,14 +39,14 @@ class d3Hyperbolic {
    */
   parameters(paramDict) {
     for (const [key, value] of Object.entries(paramDict)) {
-      if (key === "projection") {
+      if (key.toLowerCase() === "projection") {
         assert.equal(
           value.toLowerCase() === "hyperbolic" || value.toLowerCase() === "euclidean", true,
           'Must be "hyperbolic" or "euclidean"'
         );
         this.projection = value;
       }
-      else if (key === "edgeThickness") {
+      else if (key.toLowerCase() === "edgethickness") {
         this.edgeThickness = value;
       }
       else {
@@ -66,19 +66,16 @@ class d3Hyperbolic {
     // elementQuery must select a single empty div
     let element = document.querySelector(elementQuery);
     assert.equal(element.childNodes.length, 0, "Given rendering element must be empty");
+    assert.equal(element instanceof SVGElement, true, "The given element must be SVG");
     this.selectedElement = element;
 
-    // set the dimensions and margins of the graph
-    this.svgHeight = this.selectedElement.clientHeight;
-    this.svgWidth = this.selectedElement.clientWidth;
     if (margin == null) {
-      this.margin = { top: 10, right: 30, bottom: 30, left: 40 };
+      this.margin = { top: 10, right: 10, bottom: 10, left: 10 };
     }
     else {
       this.margin = margin;
     }
-    this.canvasWidth = this.svgWidth - this.margin.left - this.margin.right,
-    this.canvasHeight = this.svgHeight - this.margin.top - this.margin.bottom;
+
     return this;
   }
 
@@ -112,11 +109,17 @@ class d3Hyperbolic {
     let vertices = this.graph.nodes;
     let edges = this.graph.edges;
 
+    // set the dimensions and margins of the graph
+    this.svgHeight = this.selectedElement.clientHeight;
+    this.svgWidth = this.selectedElement.clientWidth;
+
+    this.canvasWidth = this.svgWidth - this.margin.left - this.margin.right,
+    this.canvasHeight = this.svgHeight - this.margin.top - this.margin.bottom;
+
+
+
     // append the svg object to the body of the page
     var svg = d3.select(this.selectedElement)
-      .append("svg")
-      .attr("width", this.canvasWidth + this.margin.left + this.margin.right)
-      .attr("height", this.canvasHeight + this.margin.top + this.margin.bottom)
       .append("g")
       .attr("transform",
         "translate(" + this.margin.left + "," + this.margin.top + ")");
@@ -134,7 +137,9 @@ class d3Hyperbolic {
       .append("path")
       .attr("class", "link")
       .attr('fill', 'none')
-    //.style("stroke", "#aaa");
+      .attr('stroke-width', this.edgeThickness)
+      .attr('stroke', 'black') // TODO: add as param
+      .attr('visibility', 'hidden');
 
     // Initialize the nodes
     var node = topLayer
@@ -144,11 +149,25 @@ class d3Hyperbolic {
       .append("circle")
       .attr("r", 10)
       .attr("class", "node")
-      .style("fill", "#69b3a2");
+      .attr("fill", "#69b3a2") // TODO: Add as param
+      .attr('stroke', 'black') // TODO: Add as param
+      .attr('stroke-width', 3) // TODO: Add as param
+      .attr('visibility', 'hidden');
 
     let zoom = d3.zoom()
       .scaleExtent([.5, 3]);
 
+    let waitingText = svg.append('g')
+      .attr('class', 'wait');
+
+    waitingText
+      .append('text')
+      .attr("x", this.canvasWidth/2)
+      .attr("y", this.canvasHeight/2)
+      .attr('dominant-baseline', 'middle')
+      .attr('text-anchor', 'middle')
+      .text('Applying force directed algorithm');
+      
 
     if (projection === 'euclidean') {
       // Zoom functionality
@@ -164,7 +183,7 @@ class d3Hyperbolic {
         .attr('height', this.canvasHeight - this.margin.bottom - this.margin.top)
         .style('fill', 'lightgrey')
         .style('stroke', 'black');
-      
+
       // @ts-ignore
       svg.call(zoom);
 
@@ -180,11 +199,15 @@ class d3Hyperbolic {
         .force("center", d3.forceCenter(this.canvasWidth / 2, this.canvasHeight / 2))     // This force attracts nodes to the center of the svg area
         .on("end", ticked => {
           link
-            .attr('d', d => d3.line()([[d.source.x, d.source.y], [d.target.x, d.target.y]]));
+            .attr('d', d => d3.line()([[d.source.x, d.source.y], [d.target.x, d.target.y]]))
+            .attr('visibility', 'visible');
     
           node
             .attr("cx", d => d.x)
-            .attr("cy", d => d.y);
+            .attr("cy", d => d.y)
+            .attr('visibility', 'visible');
+          
+          waitingText.remove()
         });
     }
     else if (projection === 'hyperbolic') {
@@ -198,7 +221,13 @@ class d3Hyperbolic {
           y: null
         }
       }
-      poindisk.boundbox = this.selectedElement.getBoundingClientRect();
+      let tmp = this.selectedElement.getBoundingClientRect()
+      poindisk.boundbox = {
+        left: 0,
+        right: this.canvasWidth,
+        bottom: this.canvasHeight,
+        top: 0
+      }
       poindisk.cx = (poindisk.boundbox.right - poindisk.boundbox.left) / 2;
       poindisk.cy = (poindisk.boundbox.bottom - poindisk.boundbox.top) / 2;
       poindisk.r = Math.min(poindisk.cx, poindisk.cy);
@@ -210,6 +239,7 @@ class d3Hyperbolic {
         .attr('r', (poindisk.boundbox.right - poindisk.boundbox.left)/2)
         .style('fill', 'lightgrey')
         .style('stroke', 'black')
+
 
 
       // Let's list the force we wanna apply on the network
@@ -224,14 +254,8 @@ class d3Hyperbolic {
         .force("center", d3.forceCenter(poindisk.cx, poindisk.cy))     // This force attracts nodes to the center of the svg area
         // This function is run at each iteration of the force algorithm, updating the nodes position.
         .on("end", ticked => {
-          let centerX = 0;
-          let centerY = 0;
-          for (let i = 0; i < vertices.length; i++) {
-            centerX += vertices[i].x;
-            centerY += vertices[i].y;
-          }
-          centerX = centerX / vertices.length;
-          centerY = centerY / vertices.length;
+          let centerX = d3.mean(vertices, d => d.x);
+          let centerY = d3.mean(vertices, d => d.y);
 
           //Set vertices position in the poincare disk.
           for (let i = 0; i < vertices.length; i++) {
@@ -243,17 +267,33 @@ class d3Hyperbolic {
           }
 
           link
-            .attr('d', d => arc_path(d.arc, poindisk));
+            .attr('d', d => arc_path(d.arc, poindisk))
+            .attr('visibility', 'visible');
 
           node
             .attr("cx", d => d.circle.cx)
             .attr("cy", d => d.circle.cy)
-            .attr('r', d => d.circle.r);
+            .attr('r', d => d.circle.r)
+            .attr('visibility', 'visible');
+          waitingText.remove()
 
           // Zoom functionality
           // This helped me a lot: https://www.freecodecamp.org/news/get-ready-to-zoom-and-pan-like-a-pro-after-reading-this-in-depth-tutorial-5d963b0a153e/
+
+
           zoom
+            .on('start', event => {
+            })
             .on("zoom", event => {
+              if(event.transform.toString() === d3.zoomIdentity.toString()) {
+                return;
+              }
+
+              // Zoom not behaving properly.
+              // Asked question in SO: https://stackoverflow.com/questions/70025602/how-to-reset-zoom-transform-after-zooming-without-reseting-selections-in-d3
+              if (event.transform.k !== 1) {
+                return;
+              }
               // Update positions of vertices
               // And Set vertices position in the poincare disk.
               for (let i = 0; i < vertices.length; i++) {
@@ -263,14 +303,14 @@ class d3Hyperbolic {
                   x: vertices[i].x,
                   y: vertices[i].y
                 }
-                vertices[i].x = vertices[i].tmp.x + event.transform.x;
-                vertices[i].y = vertices[i].tmp.y + event.transform.y;
-                to_poincare(vertices[i], centerX, centerY, poindisk, true)
-
-                // Restore original position
-                vertices[i].x = vertices[i].tmp.x;
-                vertices[i].y = vertices[i].tmp.y;
+                vertices[i].x += event.transform.x;
+                vertices[i].y += event.transform.y;
               }
+              // Calculate new poincare xy
+              for (let i = 0; i < vertices.length; i++) {
+                to_poincare(vertices[i], centerX, centerY, poindisk, true)
+              }
+
               //Calculate geodesic arc between vertices in edge set
               for (let i = 0; i < edges.length; i++) {
                 edges[i].arc = poincare_geodesic(edges[i].source.center, edges[i].target.center, poindisk)
@@ -283,7 +323,17 @@ class d3Hyperbolic {
 
               link
                 .attr('d', d => arc_path(d.arc, poindisk));
+
+              // Restore original position
+              for (let i = 0; i < vertices.length; i++) {
+                vertices[i].x = vertices[i].tmp.x;
+                vertices[i].y = vertices[i].tmp.y;
+              }
+
+              // svg.call(zoom.transform, d3.zoomIdentity);
               
+            })
+            .on('end', event => {
             });
 
 
@@ -296,6 +346,17 @@ class d3Hyperbolic {
     }
     return this;
   }
+
+  reset() {
+    if (this.selectedElement) {
+      this.selectedElement.innerHTML = '';
+    }
+
+    return this;
+  }
 }
 
+
 export default d3Hyperbolic;
+
+
