@@ -80,7 +80,7 @@ function disk_to_canvas(p, poindisk){
   let y = -p.y*poindisk.r + poindisk.cy;
   return {'x': x, 'y': y};
 }
-
+exports.disk_to_canvas = disk_to_canvas;
 
 /**
  * Convert polar coordinates to cartesian coordinates.

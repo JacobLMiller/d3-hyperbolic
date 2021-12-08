@@ -1,16 +1,17 @@
 /**
- * @file This is the main file where hyperbolic and euclidean visualization is done with the class d3Hyperbolic. 
+ * @file This is the main file where hyperbolic and euclidean visualization is done with the class d3Hyperbolic.
  */
 
+ import * as d3 from "d3";
+ import {complex, add, multiply, divide} from 'mathjs'
+ import * as utils from "./utils.js";
+ import { strict as assert } from "assert";
+ import {to_poincare, poincare_geodesic, arc_path,canvas_to_disk,poincare_circle,disk_to_canvas} from "./hyperbolic_functions";
 
-import * as d3 from "d3";
-import * as utils from "./utils.js";
-import { strict as assert } from "assert";
-import {to_poincare, poincare_geodesic, arc_path} from "./hyperbolic_functions";
 
 /**
  * The main d3-hyperbolic library class for rendering.
- * @example 
+ * @example
 let d3Hyperbolic = require("../../src/d3_hyperbolic").default;
 let hyperbolicSys = new d3Hyperbolic()
   .parameters({...})
@@ -29,44 +30,52 @@ class d3Hyperbolic {
     // Initialize default parameters
     this.projection = "hyperbolic";
     this.selectedElement = null;
+    this.forceDirected = false;
     this.graph = {};
   }
 
   /**
-   * Set the parameters for for rendering and calculations. You can call this anytime throughout the code to change any parameter. 
+   * Set the parameters for for rendering and calculations. You can call this anytime throughout the code to change any parameter.
    * @param {paramDict} paramDict - The configuration object you want to set.
    * @returns {d3Hyperbolic} `this` instance.
    */
   parameters(paramDict) {
     for (const [key, value] of Object.entries(paramDict)) {
       if (key.toLowerCase() === "projection") {
-        assert.equal(
-          value.toLowerCase() === "hyperbolic" || value.toLowerCase() === "euclidean", true,
-          'Must be "hyperbolic" or "euclidean"'
-        );
         this.projection = value;
       }
       else if (key.toLowerCase() === "edgethickness") {
         this.edgeThickness = value;
       }
+      else if (key.toLowerCase() === "mobius") {
+        this.mobius = value ? true : false;
+      }
+      else if (key.toLowerCase() === "noderadius") {
+        this.nodeRadius = value;
+      }
+      else if (key.toLowerCase() === "layout") {
+        if(value === "force") {
+          this.forceDirected = true;
+        }
+        else {
+          this.forceDirected = false;
+        }
+      }
       else {
-        assert.equal(false, true, `The parameter ${key} is undefined`);
       }
     }
     return this;
   }
 
   /**
-   * Sets the element as the default rendering canvas. 
+   * Sets the element as the default rendering canvas.
    * @param {string} elementQuery - The element to select. An id of an SVG element is required.
    * @param {margin} margin - The margin to use withing that svg element.
    * @returns `this` instance of d3Hyperbolic.
    */
-  renderCanvas(elementQuery, margin=null) {
+  renderCanvas(elementQuery, margin = null) {
     // elementQuery must select a single empty div
     let element = document.querySelector(elementQuery);
-    assert.equal(element.childNodes.length, 0, "Given rendering element must be empty");
-    assert.equal(element instanceof SVGElement, true, "The given element must be SVG");
     this.selectedElement = element;
 
     if (margin == null) {
@@ -80,17 +89,25 @@ class d3Hyperbolic {
   }
 
   /**
-   * Sets the graph for rendering. 
+   * Sets the graph for rendering.
    * @param {Graph} graph The graph object with nodes and edges list.
    * @returns `this` instance of d3Hyperbolic
    */
   setGraph(graph) {
     this.graph = graph;
+    for(let i  = 0; i<this.graph.edges.length; i++) {
+      if(Number.isInteger(this.graph.edges[i].source))  {
+        this.graph.edges[i].source = this.graph.nodes[this.graph.edges[i].source];
+      }
+      if(Number.isInteger(this.graph.edges[i].target))  {
+        this.graph.edges[i].target = this.graph.nodes[this.graph.edges[i].target];
+      }
+    }
     return this;
   }
 
   /**
-   * Reads the graph from graphviz dot format string and sets it as default graph as {@link setGraph}. 
+   * Reads the graph from graphviz dot format string and sets it as default graph as {@link setGraph}.
    * @param {string} dotStr The dot format string to read from.
    * @returns `this` instance of d3Hyperbolic
    */
@@ -114,7 +131,7 @@ class d3Hyperbolic {
     this.svgWidth = this.selectedElement.clientWidth;
 
     this.canvasWidth = this.svgWidth - this.margin.left - this.margin.right,
-    this.canvasHeight = this.svgHeight - this.margin.top - this.margin.bottom;
+      this.canvasHeight = this.svgHeight - this.margin.top - this.margin.bottom;
 
 
 
@@ -132,7 +149,7 @@ class d3Hyperbolic {
     // Initialize the links
     var link = topLayer
       .selectAll("path")
-      .data(edges, d => String(d.source)+d.target)
+      .data(edges, d => String(d.source) + d.target)
       .enter()
       .append("path")
       .attr("class", "link")
@@ -142,14 +159,16 @@ class d3Hyperbolic {
       .attr('visibility', 'hidden');
 
     // Initialize the nodes
+    console.log(vertices);
     var node = topLayer
       .selectAll("circle")
       .data(vertices, d => d.id)
       .enter()
       .append("circle")
-      .attr("r", 10)
+      .attr("fill", d => d.color)
+      .attr("r", this.nodeRadius)
       .attr("class", "node")
-      .attr("fill", "#69b3a2") // TODO: Add as param
+      // .attr("fill", "#69b3a2") // TODO: Add as param
       .attr('stroke', 'black') // TODO: Add as param
       .attr('stroke-width', 3) // TODO: Add as param
       .attr('visibility', 'hidden');
@@ -162,12 +181,12 @@ class d3Hyperbolic {
 
     waitingText
       .append('text')
-      .attr("x", this.canvasWidth/2)
-      .attr("y", this.canvasHeight/2)
+      .attr("x", this.canvasWidth / 2)
+      .attr("y", this.canvasHeight / 2)
       .attr('dominant-baseline', 'middle')
       .attr('text-anchor', 'middle')
       .text('Applying force directed algorithm');
-      
+
 
     if (projection === 'euclidean') {
       // Zoom functionality
@@ -187,28 +206,37 @@ class d3Hyperbolic {
       // @ts-ignore
       svg.call(zoom);
 
-      // Let's list the force we wanna apply on the network
-      d3.forceSimulation(vertices)                 // Force algorithm is applied to data.nodes
-        .force("link", d3.forceLink()                               // This force provides links between nodes
-          // @ts-ignore
-          .id(d => d.id)                     // This provide  the id of a node
-          // @ts-ignore
-          .links(edges, d => String(d.source)+d.target)                                    // and this the list of links
-        )
-        .force("charge", d3.forceManyBody().strength(-400))         // This adds repulsion between nodes. Play with the -400 for the repulsion strength
-        .force("center", d3.forceCenter(this.canvasWidth / 2, this.canvasHeight / 2))     // This force attracts nodes to the center of the svg area
-        .on("end", ticked => {
+      let start_drawing = () => {
           link
             .attr('d', d => d3.line()([[d.source.x, d.source.y], [d.target.x, d.target.y]]))
             .attr('visibility', 'visible');
-    
+
           node
             .attr("cx", d => d.x)
             .attr("cy", d => d.y)
             .attr('visibility', 'visible');
-          
+
           waitingText.remove()
-        });
+      }
+
+      if(this.forceDirected) {
+        // Let's list the force we wanna apply on the network
+        d3.forceSimulation(vertices)                 // Force algorithm is applied to data.nodes
+          .force("link", d3.forceLink()                               // This force provides links between nodes
+            // @ts-ignore
+            .id(d => d.id)                     // This provide  the id of a node
+            // @ts-ignore
+            .links(edges, d => String(d.source) + d.target)                                    // and this the list of links
+          )
+          .force("charge", d3.forceManyBody().strength(-400))         // This adds repulsion between nodes. Play with the -400 for the repulsion strength
+          .force("center", d3.forceCenter(this.canvasWidth / 2, this.canvasHeight / 2))     // This force attracts nodes to the center of the svg area
+          .on("end", start_drawing);
+
+      }
+      else {
+        start_drawing();
+      }
+
     }
     else if (projection === 'hyperbolic') {
       let poindisk = {
@@ -228,10 +256,20 @@ class d3Hyperbolic {
         bottom: this.canvasHeight,
         top: 0
       }
+      console.log(poindisk.boundbox)
+      console.log(this.selectedElement.getBoundingClientRect());
+      let clientRect = this.selectedElement.getBoundingClientRect();
+
+
+      poindisk.originx = clientRect.left + (clientRect.right - clientRect.left) / 2;
+      poindisk.originy = clientRect.top + (clientRect.bottom - clientRect.top) / 2
+
       poindisk.cx = (poindisk.boundbox.right - poindisk.boundbox.left) / 2;
       poindisk.cy = (poindisk.boundbox.bottom - poindisk.boundbox.top) / 2;
       poindisk.r = Math.min(poindisk.cx, poindisk.cy);
       poindisk.center = { x: poindisk.cx, y: poindisk.cy }
+
+      this.currentOffset = {'x': 0, 'y': 0}
 
       bottomLayer.append('circle')
         .attr('cx', (poindisk.boundbox.right - poindisk.boundbox.left)/2)
@@ -240,110 +278,174 @@ class d3Hyperbolic {
         .style('fill', 'lightgrey')
         .style('stroke', 'black')
 
+      let start_drawing = () => {
+        let centerX = d3.mean(vertices, d => d.x);
+        let centerY = d3.mean(vertices, d => d.y);
+
+        //Set vertices position in the poincare disk.
+        for (let i = 0; i < vertices.length; i++) {
+          let r = Math.sqrt(Math.random()*0.8);
+          let theta = Math.random()*2*Math.PI;
+          vertices[i].center = disk_to_canvas({'x': r*Math.sin(theta), 'y': r*Math.cos(theta)},poindisk)
+          vertices[i].circle = poincare_circle(canvas_to_disk(vertices[i].center, poindisk), 0.05, poindisk)
+
+          vertices[i].hPos = canvas_to_disk(vertices[i].center,poindisk)
+          vertices[i].pos = complex(vertices[i].hPos.x,vertices[i].hPos.y)
+
+          //to_poincare(vertices[i], centerX, centerY, poindisk, true)
+        }
+        //Calculate geodesic arc between vertices in edge set
+        for (let i = 0; i < edges.length; i++) {
+          edges[i].arc = poincare_geodesic(edges[i].source.center, edges[i].target.center, poindisk)
+        }
+
+        link
+          .attr('d', d => arc_path(d.arc, poindisk))
+          .attr('visibility', 'visible');
+
+        node
+          .attr("cx", d => d.circle.cx)
+          .attr("cy", d => d.circle.cy)
+          .attr('r', d => d.circle.r)
+          .attr('visibility', 'visible');
+        waitingText.remove()
+
+        // Zoom functionality
+        // This helped me a lot: https://www.freecodecamp.org/news/get-ready-to-zoom-and-pan-like-a-pro-after-reading-this-in-depth-tutorial-5d963b0a153e/
 
 
+        zoom
+          .on('start', event => {
+          })
+          .on("zoom", event => {
+            if (event.transform.toString() === d3.zoomIdentity.toString()) {
+              return;
+            }
+            if(!self.mobius){
+                // Zoom not behaving properly.
+                // Asked question in SO: https://stackoverflow.com/questions/70025602/how-to-reset-zoom-transform-after-zooming-without-reseting-selections-in-d3
+                if (event.transform.k !== 1) {
+                  event.transform.k = 1;
+                }
+                // Update positions of vertices
+                // And Set vertices position in the poincare disk.
+                for (let i = 0; i < vertices.length; i++) {
+                  // I know there is more efficient way to do this. Will solve this later
+                  // Backup the original x and y
+                  vertices[i].tmp = {
+                    x: vertices[i].x,
+                    y: vertices[i].y
+                  }
+                  vertices[i].x += event.transform.x;
+                  vertices[i].y += event.transform.y;
+                }
+                // Calculate new poincare xy
+                for (let i = 0; i < vertices.length; i++) {
+                  to_poincare(vertices[i], centerX, centerY, poindisk, true)
+                }
+
+                //Calculate geodesic arc between vertices in edge set
+                for (let i = 0; i < edges.length; i++) {
+                  edges[i].arc = poincare_geodesic(edges[i].source.center, edges[i].target.center, poindisk)
+                }
+
+                node
+                  .attr("cx", d => d.circle.cx)
+                  .attr("cy", d => d.circle.cy)
+                  .attr('r', d => d.circle.r);
+
+                link
+                  .attr('d', d => arc_path(d.arc, poindisk));
+
+                // Restore original position
+                for (let i = 0; i < vertices.length; i++) {
+                  vertices[i].x = vertices[i].tmp.x;
+                  vertices[i].y = vertices[i].tmp.y;
+                }
+              }
+
+            else{
+                let distance =[(this.currentOffset.x-event.transform.x)*0.3,(this.currentOffset.y-event.transform.y)*0.3]
+                //console.log(event.transform)
+                if(Math.abs(distance[0]) > 0 || Math.abs(distance[1]) > 0){
+                  let z0 = canvas_to_disk({'x': poindisk.cx+distance[0], 'y':poindisk.cy+distance[1]},poindisk)
+
+                  z0 = complex(z0.x,z0.y)
+                  let transform = {
+                    a: 1,
+                    b: z0.neg(),
+                    c: z0.conjugate().neg(),
+                    d: 1
+                  };
+
+
+                  for (let i =0; i<vertices.length; i++){
+                    vertices[i].pos = mobius(vertices[i].pos,transform);
+                    vertices[i].x = vertices[i].pos.re;
+                    vertices[i].y = vertices[i].pos.im;
+
+                    vertices[i].center = disk_to_canvas({ 'x': vertices[i].x, 'y': vertices[i].y },poindisk);
+                    vertices[i].circle = poincare_circle({'x':vertices[i].x,'y':vertices[i].y}, 0.05, poindisk)
+
+                  }
+                  this.currentOffset.x = event.transform.x;
+                  this.currentOffset.y = event.transform.y;
+              }
+
+
+
+                //Calculate geodesic arc between vertices in edge set
+                for (let i = 0; i < edges.length; i++) {
+                  edges[i].arc = poincare_geodesic(edges[i].source.center, edges[i].target.center, poindisk)
+                }
+
+                node
+                  .attr("cx", d => d.circle.cx)
+                  .attr("cy", d => d.circle.cy)
+                  .attr('r', d => d.circle.r);
+
+                link
+                  .attr('d', d => arc_path(d.arc, poindisk));
+
+            }
+
+            // svg.call(zoom.transform, d3.zoomIdentity);
+
+          })
+          .on('end', event => {
+          });
+
+
+        // @ts-ignore
+        svg.call(zoom);
+      }
+
+      if (this.forceDirected) {
       // Let's list the force we wanna apply on the network
       d3.forceSimulation(vertices)                 // Force algorithm is applied to data.nodes
         .force("link", d3.forceLink()                               // This force provides links between nodes
           // @ts-ignore
           .id(d => d.id)                     // This provide  the id of a node
           // @ts-ignore
-          .links(edges, d => String(d.source)+d.target)                                    // and this the list of links
+          .links(edges, d => String(d.source) + d.target)                                    // and this the list of links
         )
-        .force("charge", d3.forceManyBody().strength(-400))         // This adds repulsion between nodes. Play with the -400 for the repulsion strength
+        .force("charge", d3.forceManyBody().strength(-4000))         // This adds repulsion between nodes. Play with the -400 for the repulsion strength
         .force("center", d3.forceCenter(poindisk.cx, poindisk.cy))     // This force attracts nodes to the center of the svg area
         // This function is run at each iteration of the force algorithm, updating the nodes position.
-        .on("end", ticked => {
-          let centerX = d3.mean(vertices, d => d.x);
-          let centerY = d3.mean(vertices, d => d.y);
+        .on("end", start_drawing);
 
-          //Set vertices position in the poincare disk.
-          for (let i = 0; i < vertices.length; i++) {
-            to_poincare(vertices[i], centerX, centerY, poindisk, true)
-          }
-          //Calculate geodesic arc between vertices in edge set
-          for (let i = 0; i < edges.length; i++) {
-            edges[i].arc = poincare_geodesic(edges[i].source.center, edges[i].target.center, poindisk)
-          }
+      }
+      else {
+        start_drawing();
+      }
 
-          link
-            .attr('d', d => arc_path(d.arc, poindisk))
-            .attr('visibility', 'visible');
-
-          node
-            .attr("cx", d => d.circle.cx)
-            .attr("cy", d => d.circle.cy)
-            .attr('r', d => d.circle.r)
-            .attr('visibility', 'visible');
-          waitingText.remove()
-
-          // Zoom functionality
-          // This helped me a lot: https://www.freecodecamp.org/news/get-ready-to-zoom-and-pan-like-a-pro-after-reading-this-in-depth-tutorial-5d963b0a153e/
-
-
-          zoom
-            .on('start', event => {
-            })
-            .on("zoom", event => {
-              if(event.transform.toString() === d3.zoomIdentity.toString()) {
-                return;
-              }
-
-              // Zoom not behaving properly.
-              // Asked question in SO: https://stackoverflow.com/questions/70025602/how-to-reset-zoom-transform-after-zooming-without-reseting-selections-in-d3
-              if (event.transform.k !== 1) {
-                return;
-              }
-              // Update positions of vertices
-              // And Set vertices position in the poincare disk.
-              for (let i = 0; i < vertices.length; i++) {
-                // I know there is more efficient way to do this. Will solve this later
-                // Backup the original x and y
-                vertices[i].tmp = {
-                  x: vertices[i].x,
-                  y: vertices[i].y
-                }
-                vertices[i].x += event.transform.x;
-                vertices[i].y += event.transform.y;
-              }
-              // Calculate new poincare xy
-              for (let i = 0; i < vertices.length; i++) {
-                to_poincare(vertices[i], centerX, centerY, poindisk, true)
-              }
-
-              //Calculate geodesic arc between vertices in edge set
-              for (let i = 0; i < edges.length; i++) {
-                edges[i].arc = poincare_geodesic(edges[i].source.center, edges[i].target.center, poindisk)
-              }
-
-              node
-                .attr("cx", d => d.circle.cx)
-                .attr("cy", d => d.circle.cy)
-                .attr('r', d => d.circle.r);
-
-              link
-                .attr('d', d => arc_path(d.arc, poindisk));
-
-              // Restore original position
-              for (let i = 0; i < vertices.length; i++) {
-                vertices[i].x = vertices[i].tmp.x;
-                vertices[i].y = vertices[i].tmp.y;
-              }
-
-              // svg.call(zoom.transform, d3.zoomIdentity);
-              
-            })
-            .on('end', event => {
-            });
-
-
-          // @ts-ignore
-          svg.call(zoom);
-
-        });
 
 
     }
+    console.log(node)
+    this.nodeObj = node
+    this.zoom = zoom
+    this.topLayer = topLayer
     return this;
   }
 
@@ -356,7 +458,16 @@ class d3Hyperbolic {
   }
 }
 
-
 export default d3Hyperbolic;
 
+function mobius(z,transform){;
 
+  numerator = multiply(transform.a,z);
+  numerator = add(numerator,transform.b);
+  denominator = multiply(transform.c,z);
+  denominator = add(denominator,transform.d);
+
+  return divide(numerator,denominator);
+  //return {'x': newZ.re, 'y': newZ.im}
+
+}
